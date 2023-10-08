@@ -25,7 +25,7 @@ for file in os.listdir(current_dir):
         # Take only the file's name and remove any leading and trailing white-spaces.
         """ This will be ffmpeg's output.
             It might be deleted as leftover when KeyboardInterrupt raised."""
-        output = file[:file.rfind(".")].strip() + output_extension
+        output = file[: file.rfind(".")].strip() + output_extension
 
         try:
             subprocess.run(
@@ -42,7 +42,9 @@ for file in os.listdir(current_dir):
                 os.remove(file)
                 print(f'The original file "{file}" is deleted.')
         except subprocess.CalledProcessError as e:
-            print(f"Something went wrong while converting, return code is {e.returncode}.\n")
+            print(
+                f"Something went wrong while converting, return code is {e.returncode}.\n"
+            )
             print(f'ffmpeg error: "{e.stderr}".\n')
             print("Keeping the original file and moving to the next candidate file.")
         except FileNotFoundError:
@@ -52,7 +54,11 @@ for file in os.listdir(current_dir):
             print("Keyboard interrupt detected.\n")
             # Ask the user if they want to keep the unfinished files.
             # We are looking for the input's first letter so that it covers "yes", "y", "yea", etc. too.
-            if input(f'Delete leftover "{output_extension}" files created? (y/n) ')[0].lower() == "y":
+            if (
+                input(f'Delete leftover "{output_extension}" files created? (y/n) ')[0]
+                .lower()
+                == "y"
+            ):
                 print("\nDeleting leftovers.")
                 for leftover in os.listdir(current_dir):
                     # We are looking for exact output so that the other files aren't affected.
