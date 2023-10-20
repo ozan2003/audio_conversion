@@ -1,4 +1,4 @@
-# audio_convert
+# audio_conversion
 This is a Python script that converts audio files in a directory via FFmpeg.
 
 ## Usage
