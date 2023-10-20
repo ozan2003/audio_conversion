@@ -4,10 +4,32 @@ import os
 import subprocess
 from time import sleep
 from sys import exit
+import argparse
 
+parser = argparse.ArgumentParser(
+    description="""Convert audio files via FFmpeg.\nPlace this file in the directory where you want it to work, then execute.\nFFmpeg must be present and added to path.""",
+    epilog="Remember to include the period at the beginning of the extension.",
+    formatter_class=argparse.RawTextHelpFormatter,
+)
 
-input_extension = ".webm"
-output_extension = ".mp3"
+parser.add_argument(
+    "input",
+    type=str,
+    help="The extension of the files to be converted. (Default: .webm)",
+    default=".webm",
+    nargs="?",
+)
+
+parser.add_argument(
+    "output",
+    type=str,
+    help="The target extension. (Default: .mp3)",
+    default=".mp3",
+    nargs="?"
+)
+
+input_extension = parser.parse_args().input
+output_extension = parser.parse_args().output
 
 # Use os.path.abspath() which returns the absolute path of the current script to be sure.
 # os.path.dirname() returns the directory in which the code file is stored.
