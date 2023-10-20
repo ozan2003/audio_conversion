@@ -7,23 +7,23 @@ from sys import exit
 import argparse
 
 parser = argparse.ArgumentParser(
-    description="""Convert audio files via FFmpeg.\nPlace this file in the directory where you want it to work, then execute.\nFFmpeg must be present and added to path.""",
+    description="Convert audio files via FFmpeg.",
     epilog="Remember to include the period at the beginning of the extension.",
-    formatter_class=argparse.RawTextHelpFormatter,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter # show the default values in description.
 )
 
 parser.add_argument(
-    "input",
+    "input",  # this argument denotes a positional argument since it doesn't have - or --.
     type=str,
-    help="The extension of the files to be converted. (Default: .webm)",
+    help="The extension of the files to be converted.",
     default=".webm",
-    nargs="?",
+    nargs="?" # number of arguments, "?" means zero or one value.
 )
 
 parser.add_argument(
     "output",
     type=str,
-    help="The target extension. (Default: .mp3)",
+    help="The target extension.",
     default=".mp3",
     nargs="?"
 )
@@ -42,21 +42,21 @@ print(f"Current directory is: {current_dir}\n")
 # Iterating through files.
 for file in filter(
     lambda f: f.endswith(input_extension) and os.path.isfile(os.path.abspath(f)),
-    os.listdir(current_dir),
+    os.listdir(current_dir)
 ):
     print(f'Found "{file}"! Converting to "{output_extension}".\n')
 
     # Take only the file's name and remove any leading and trailing white-spaces.
     """ This will be ffmpeg's output.
         It might be deleted as leftover when KeyboardInterrupt raised."""
-    output = file[: file.rfind(".")].strip() + output_extension
+    output = file[:file.rfind(".")].strip() + output_extension
 
     try:
         subprocess.run(
             f'ffmpeg -i "{file}" "{output}"',
             shell=True,
             capture_output=True,
-            check=True,
+            check=True
         )
 
         print("Done! Moving to the next candidate file.")
