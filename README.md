@@ -9,7 +9,7 @@ The first argument specifies the source extension, while the second specifies th
 ```shell
 convert.py webm mp3    # converts all .webm files to .mp3.
 
-convert.py avi.mp4     # converts all .avi files to .mp4.
+convert.py avi mp4     # converts all .avi files to .mp4.
 
 convert.py -k mp3 webm # convert all mp3 files to webm while keeping the original files.
 ```
