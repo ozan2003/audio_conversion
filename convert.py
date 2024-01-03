@@ -47,6 +47,7 @@ args = parser.parse_args()
 input_extension: str = "." + args.input  # Don't forget the dot.
 
 # Check if the input extension format is valid.
+# Input and output extension must be comprised of letters and numbers.
 if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
     print("Invalid input extension.")
     exit()
@@ -58,7 +59,6 @@ keeping_original: bool = (
 )  # Keep the original files if the option is not present.
 
 # Check if the output extension format is valid.
-# Input must be comprised of letters and numbers.
 if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
     print("Invalid output extension.")
     exit()
