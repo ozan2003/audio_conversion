@@ -54,15 +54,14 @@ if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
 
 output_extension: str = "." + args.output  # Don't forget the dot.
 
-keeping_original: bool = (
-    args.keep
-)  # Keep the original files if the option is not present.
-
 # Check if the output extension format is valid.
 if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
     print("Invalid output extension.")
     exit()
 
+keeping_original: bool = (
+    args.keep
+)  # Keep the original files if the option is not present.
 
 """ __file__ is a special variable that represents the path of the current script being executed. 
     It might not be always absolute."""
