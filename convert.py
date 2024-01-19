@@ -7,7 +7,12 @@ from time import sleep
 import subprocess
 import re
 
+
 def main():
+    # An exception for invalid inputs.
+    class InvalidInput(Exception):
+        pass
+
     # argparse allows us to communicate the program via terminal.
     parser = argparse.ArgumentParser(
         description="Convert audio files via FFmpeg.",
@@ -48,21 +53,18 @@ def main():
     input_extension: str = "." + args.input  # Don't forget the dot.
 
     # Check if the input extension format is valid.
-    # Input and output extension must be comprised of letters and numbers.
     if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
-        print("Invalid input extension.")
-        exit()
+        raise InvalidInput("Invalid input extension. Please check your input.")
 
     output_extension: str = "." + args.output  # Don't forget the dot.
 
     # Check if the output extension format is valid.
+    # Input must be comprised of letters and numbers.
     if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
-        print("Invalid output extension.")
-        exit()
+        raise InvalidInput("Invalid output extension. Please check your input.")
 
-    keeping_original: bool = (
-        args.keep
-    )  # Keep the original files if the option is not present.
+    # Keep the original files if the option is not present.
+    keeping_original: bool = args.keep
 
     """ __file__ is a special variable that represents the path of the current script being executed. 
         It might not be always absolute."""
@@ -74,9 +76,8 @@ def main():
 
     print(
         f"""{input_extension} -> {output_extension} {"(keeping the original files)" if keeping_original else ""}
-    Current directory is: {current_dir}."""
+Current directory is: {current_dir}.\n"""
     )
-
 
     # Iterating through files one by one where this file is located.
     for file in filter(
@@ -91,7 +92,7 @@ def main():
         output = file[: file.rfind(".")].strip() + output_extension
 
         try:
-            command = f'ffmpeg -i "{file}" "{output}"'
+            command: str = f'ffmpeg -i "{file}" "{output}"'
 
             subprocess.run(
                 command,
@@ -102,7 +103,10 @@ def main():
 
             print("Done! Moving to the next candidate file.")
 
-            if os.path.exists(os.path.join(current_dir, output)) and not keeping_original:
+            if (
+                os.path.exists(os.path.join(current_dir, output))
+                and not keeping_original
+            ):
                 # Delete the original file if the output file is created and the option is present.
                 os.remove(file)
                 print(f'The original file "{file}" is deleted.')
@@ -119,7 +123,10 @@ def main():
             print("Keyboard interrupt detected.\n")
             # Ask the user if they want to keep the unfinished files.
             # We are looking for the input's first letter so that it covers "yes", "y", "yea", etc. too.
-            if input("Do you want to keep the unfinished files? (y/n) ")[0].lower() == "y":
+            if (
+                input("Do you want to keep the unfinished files? (y/n) ")[0].lower()
+                == "y"
+            ):
                 print("\nDeleting leftovers.")
                 for leftover in os.listdir(current_dir):
                     # We are looking for exact output so that the other files aren't affected.
@@ -133,6 +140,7 @@ def main():
             print("-" * 65)
     print("Everything is finished. Closing.")
     sleep(1.5)
+
 
 if __name__ == "__main__":
     main()
