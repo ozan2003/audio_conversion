@@ -2,53 +2,54 @@
 # FFmpeg must be present and added to path.
 import argparse
 from sys import exit
-import os
 from time import sleep
 import subprocess
 import re
+from pathlib import Path
 
 
-def main():
-    # An exception for invalid inputs.
-    class InvalidInput(Exception):
-        pass
+# An exception for invalid inputs.
+class InvalidInput(Exception):
+    pass
 
-    # argparse allows us to communicate the program via terminal.
-    parser = argparse.ArgumentParser(
-        description="Convert audio files via FFmpeg.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,  # show the default values in description.
-    )
 
-    # Positional argument for the input extension.
-    parser.add_argument(
-        "input",  # this argument denotes a positional argument since it doesn't have - or --.
-        type=str,
-        help="The extension of the files to be converted.",
-        default="webm",
-        action="store",  # store means that the value will be stored in the variable.
-        nargs="?",  # number of arguments, "?" means zero or one value.
-    )
+# argparse allows us to communicate the program via terminal.
+parser = argparse.ArgumentParser(
+    description="Convert audio files via FFmpeg.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,  # show the default values in description.
+)
 
-    # Option for keeping the original files.
-    parser.add_argument(
-        "-k",
-        "--keep",
-        help="Option to keep the original files.",
-        action="store_true",  # store_true means that if the option is present, it will be True.
-    )
+# Positional argument for the input extension.
+parser.add_argument(
+    "input",  # this argument denotes a positional argument since it doesn't have - or --.
+    type=str,
+    help="The extension of the files to be converted.",
+    default="webm",
+    action="store",  # store means that the value will be stored in the variable.
+    nargs="?",  # number of arguments, "?" means zero or one value.
+)
 
-    # Positional argument for the output extension.
-    parser.add_argument(
-        "output",
-        type=str,
-        help="The target extension.",
-        action="store",
-        default="mp3",
-        nargs="?",
-    )
+# Option for keeping the original files.
+parser.add_argument(
+    "-k",
+    "--keep",
+    help="Option to keep the original files.",
+    action="store_true",  # store_true means that if the option is present, it will be True.
+)
 
-    # Parse the arguments.
-    args = parser.parse_args()
+# Positional argument for the output extension.
+parser.add_argument(
+    "output",
+    type=str,
+    help="The target extension.",
+    action="store",
+    default="mp3",
+    nargs="?",
+)
+
+
+def main() -> None:
+    args = parser.parse_args()  # Parse the arguments.
 
     input_extension: str = "." + args.input  # Don't forget the dot.
 
@@ -66,13 +67,8 @@ def main():
     # Keep the original files if the option is not present.
     keeping_original: bool = args.keep
 
-    """ __file__ is a special variable that represents the path of the current script being executed. 
-        It might not be always absolute."""
-    # Use os.path.abspath() which returns the absolute path of the current script to be sure.
-    # os.path.dirname() returns the directory in which the code file is stored.
-    """ This method relies on clicking on the file; it won't work if the command line is used from somewhere else.
-        Use os.getcwd() for command-line usage."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Get the current directory where this file is located.
+    current_dir: Path = Path(__file__).parent.resolve()
 
     print(
         f"""{input_extension} -> {output_extension} {"(keeping the original files)" if keeping_original else ""}
@@ -80,35 +76,28 @@ Current directory is: {current_dir}.\n"""
     )
 
     # Iterating through files one by one where this file is located.
-    for file in filter(
-        lambda f: f.endswith(input_extension) and os.path.isfile(os.path.abspath(f)),
-        os.listdir(current_dir),
-    ):
-        print(f'=> Found "{file}", converting to "{output_extension}".\n')
+    for file in filter(lambda f: f.is_file(), current_dir.glob(f"*{input_extension}")):
+        print(f'=> Found "{file.name}", converting to "{output_extension}".\n')
 
         # Take only the file's name and remove any leading and trailing white-spaces.
         """ This will be ffmpeg's output.
             It might be deleted as leftover when KeyboardInterrupt raised."""
-        output = file[: file.rfind(".")].strip() + output_extension
+        output: Path = current_dir.joinpath(file.stem.strip() + output_extension)
 
         try:
-            command: str = f'ffmpeg -i "{file}" "{output}"'
+            command: str = f'ffmpeg -i "{file.name}" "{output.name}"'
 
             subprocess.run(
                 command,
-                shell=True,
                 capture_output=True,
                 check=True,
             )
 
             print("Done! Moving to the next candidate file.")
 
-            if (
-                os.path.exists(os.path.join(current_dir, output))
-                and not keeping_original
-            ):
+            if current_dir.joinpath(output).exists() and not keeping_original:
                 # Delete the original file if the output file is created and the option is present.
-                os.remove(file)
+                Path.unlink(file)
                 print(f'The original file "{file}" is deleted.')
         except subprocess.CalledProcessError as e:
             print(
@@ -128,10 +117,12 @@ Current directory is: {current_dir}.\n"""
                 == "y"
             ):
                 print("\nDeleting leftovers.")
-                for leftover in os.listdir(current_dir):
+                for leftover in filter(
+                    lambda f: f.is_file(), current_dir.glob(f"*{output_extension}")
+                ):
                     # We are looking for exact output so that the other files aren't affected.
                     if leftover == output:
-                        os.remove(leftover)
+                        Path.unlink(leftover)
                         print(f'"{output}" deleted.')
             print("\nExiting.")
             sleep(2)
