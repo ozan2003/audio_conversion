@@ -6,9 +6,29 @@ from time import sleep
 import subprocess
 import re
 from pathlib import Path
-from rich import print
-from rich.prompt import Confirm
-from rich.console import Console
+
+# Check if rich is installed.
+try:
+    from rich import print
+    from rich.prompt import Confirm
+    from rich.console import Console
+except ImportError:
+    raise ImportError(
+        "rich is not installed. Please install it via 'pip install rich'."
+    )
+
+# Check if FFmpeg is available
+try:
+    subprocess.run(
+        ["ffmpeg", "-version"],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+except subprocess.CalledProcessError:
+    raise FileNotFoundError(
+        "FFmpeg is not found. Please install it and add it to path."
+    )
 
 
 # An exception for invalid inputs.
@@ -53,6 +73,7 @@ parser.add_argument(
 
 def main() -> None:
     console = Console()
+    err_console = Console(stderr=True)  # For errors.
 
     args = parser.parse_args()  # Parse the arguments.
 
@@ -89,12 +110,13 @@ def main() -> None:
         for file in filter(
             lambda f: f.is_file(), current_dir.glob(f"*{input_extension}")
         ):
+            # Emit a message for each file found.
             status.update(f'Found "{file.name}"\n')
 
             # This will be ffmpeg's output.
             # It might be deleted as leftover when KeyboardInterrupt raised.
-            # Take only the file's name and remove any leading and trailing white-spaces.
-            output: Path = current_dir.joinpath(file.stem.strip() + output_extension)
+            # Take only the file's name.
+            output: Path = current_dir.joinpath(file.stem + output_extension)
 
             try:
                 command: str = f'ffmpeg -i "{file.name}" "{output.name}"'
@@ -105,22 +127,23 @@ def main() -> None:
                     check=True,
                 )
 
-                if current_dir.joinpath(output).exists() and not keeping_original:
+                # if current_dir.joinpath(output).exists() and not keeping_original:
+                if output.exists() and not keeping_original:
                     # Delete the original file if the output file is created and the option is present.
                     Path.unlink(file)
                     console.log(
-                        "[dodger_blue2]Done! Moving to the next candidate file.",
+                        "[magenta]Done! Moving to the next candidate file.",
                         highlight=True,
                     )
                     console.log(
-                        f'[dodger_blue2]The original file "{file.name}" is deleted.',
+                        f'[magenta]The original file "{file.name}" is deleted.',
                         highlight=True,
                     )
             except subprocess.CalledProcessError as e:
-                console.log(f'[red]Error converting "{file.name}": {e.stderr}')
+                err_console.log(f'[red]Error converting "{file.name}": {e.stderr}')
                 console.log(f'[yellow]Keeping the original file "{file.name}"')
             except FileNotFoundError:
-                console.log(
+                err_console.log(
                     """[red]The original file hasn't been found.
                     Moving to the next candidate file."""
                 )
@@ -128,12 +151,13 @@ def main() -> None:
                 status.stop()
                 print("[red]Keyboard interrupt detected")
                 # Ask the user if they want to keep the unfinished files.
-                if Confirm.ask(
+                # By default, leftovers will be deleted.
+                if not Confirm.ask(
                     "[bright_green]Do you want to keep the unfinished files?",
                     choices=["y", "n"],
                     show_choices=True,
                     show_default=True,
-                    default="y",
+                    default=False,
                 ):
                     print("[yellow]Deleting leftovers.")
                     for leftover in filter(
