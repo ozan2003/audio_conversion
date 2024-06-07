@@ -1,40 +1,29 @@
-# Place this file in the directory where you want it to work, then execute.
-# FFmpeg must be present and added to path.
+#!python
+"""
+Place this file in the directory where you want it to work, then execute.
+"""
 import argparse
 from sys import exit
 from time import sleep
 import subprocess
 import re
 from pathlib import Path
+from shutil import which
 
 # Check if rich is installed.
 try:
     from rich import print
     from rich.prompt import Confirm
     from rich.console import Console
-except ImportError:
-    raise ImportError(
-        "rich is not installed. Please install it via 'pip install rich'."
-    )
+except ModuleNotFoundError as exc:
+    exc.add_note("rich is not installed. Please install it via 'pip install rich'.")
+    raise
 
 # Check if FFmpeg is available
-try:
-    subprocess.run(
-        ["ffmpeg", "-version"],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
-except subprocess.CalledProcessError:
+if not which("ffmpeg"):
     raise FileNotFoundError(
         "FFmpeg is not found. Please install it and add it to path."
     )
-
-
-# An exception for invalid inputs.
-class InvalidInput(Exception):
-    pass
-
 
 # argparse allows us to communicate the program via terminal.
 parser = argparse.ArgumentParser(
@@ -71,24 +60,45 @@ parser.add_argument(
 )
 
 
-def main() -> None:
-    console = Console()
-    err_console = Console(stderr=True)  # For errors.
+def check_extensions(*extensions: str) -> tuple[str, ...]:
+    """
+    Checks the validity of the extensions given.
+    
+    The extensions should be started with a dot,
+    can be of any length, and can contain only
+    alphanumeric characters.
 
+    Args:
+       *extensions: str: The extensions to be checked.
+
+    Returns:
+       A tuple comprised of extensions.
+
+    Raises:
+       RuntimeError: If any of the extensions are invalid.
+    """
+    pattern: str = r"^\.[a-zA-Z0-9]+$"
+
+    for extension in extensions:
+        if not re.match(pattern, extension):
+            raise RuntimeError(
+                f"Invalid extension for {extension!r}. Please check your input."
+            )
+
+    return extensions
+
+
+def main() -> None:
     args = parser.parse_args()  # Parse the arguments.
 
-    input_extension: str = "." + args.input  # Don't forget the dot.
+    # Don't forget the dots.
+    input_extension, output_extension = check_extensions(
+        "." + args.input, "." + args.output
+    )
 
-    # Check if the input extension format is valid.
-    if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
-        raise InvalidInput("Invalid input extension. Please check your input.")
-
-    output_extension: str = "." + args.output  # Don't forget the dot.
-
-    # Check if the output extension format is valid.
-    # Input must be comprised of letters and numbers.
-    if not re.match(r"\.[a-zA-Z0-9]+", input_extension):
-        raise InvalidInput("Invalid output extension. Please check your input.")
+    # Intialize the consoles.
+    console = Console()
+    err_console = Console(stderr=True, style="bold red")  # For errors.
 
     # Keep the original files if the option is not present.
     keeping_original: bool = args.keep
@@ -115,8 +125,8 @@ def main() -> None:
 
             # This will be ffmpeg's output.
             # It might be deleted as leftover when KeyboardInterrupt raised.
-            # Take only the file's name.
-            output: Path = current_dir.joinpath(file.stem + output_extension)
+            #output: Path = current_dir.joinpath(file.stem).with_suffix(output_extension)
+            output: Path = file.with_suffix(output_extension)
 
             try:
                 command: str = f'ffmpeg -i "{file.name}" "{output.name}"'
@@ -140,11 +150,11 @@ def main() -> None:
                         highlight=True,
                     )
             except subprocess.CalledProcessError as e:
-                err_console.log(f'[red]Error converting "{file.name}": {e.stderr}')
-                console.log(f'[yellow]Keeping the original file "{file.name}"')
+                err_console.log(f'Error converting "{file.name}": {e.stderr}')
+                console.log("[yellow]Keeping the original file.")
             except FileNotFoundError:
                 err_console.log(
-                    """[red]The original file hasn't been found.
+                    """The original file hasn't been found.
                     Moving to the next candidate file."""
                 )
             except KeyboardInterrupt:
@@ -168,10 +178,10 @@ def main() -> None:
                             Path.unlink(leftover)
                             status.update(f'[yellow]{output.name}" deleted.')
                 print("Exiting.")
-                sleep(2)
+                sleep(4)
                 exit()
-    print("[blue1]Everything is finished. Closing.")
-    sleep(1.5)
+    print("[dodger_blue1]Everything is finished. Closing.")
+    sleep(3.5)
 
 
 if __name__ == "__main__":
