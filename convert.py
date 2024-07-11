@@ -2,6 +2,7 @@
 """
 Place this file in the directory where you want it to work, then execute.
 """
+
 import argparse
 from sys import exit
 from time import sleep
@@ -12,7 +13,7 @@ from shutil import which
 
 # Check if rich is installed.
 try:
-    from rich import print
+    from rich import print as rprint
     from rich.prompt import Confirm
     from rich.console import Console
 except ModuleNotFoundError as exc:
@@ -41,12 +42,12 @@ parser.add_argument(
     nargs="?",  # number of arguments, "?" means zero or one value.
 )
 
-# Option for keeping the original files.
+# Option for deleting the original files.
 parser.add_argument(
-    "-k",
-    "--keep",
-    help="Option to keep the original files.",
-    action="store_true",  # store_true means that if the option is present, it will be True.
+    "-d",
+    "--delete",
+    help="Option to delete the original files.",
+    action="store_true",
 )
 
 # Positional argument for the output extension.
@@ -63,7 +64,7 @@ parser.add_argument(
 def check_extensions(*extensions: str) -> tuple[str, ...]:
     """
     Checks the validity of the extensions given.
-    
+
     The extensions should be started with a dot,
     can be of any length, and can contain only
     alphanumeric characters.
@@ -96,21 +97,22 @@ def main() -> None:
         "." + args.input, "." + args.output
     )
 
-    # Intialize the consoles.
+    # Intialize the console.
     console = Console()
-    err_console = Console(stderr=True, style="bold red")  # For errors.
 
-    # Keep the original files if the option is not present.
-    keeping_original: bool = args.keep
+    # Delete the original files if the option is present.
+    deleting_original: bool = args.delete
 
-    # Get the current directory where this file is located.
+    # Get the current directory where this script is located.
     current_dir: Path = Path(__file__).parent.resolve()
 
-    print(
+    rprint(
         "{} -> {} {}\nCurrent directory is: {}\n".format(
             input_extension,
             output_extension,
-            "[yellow](keeping the original files)" if keeping_original else "",
+            "[yellow](keeping the original files)[/yellow]"
+            if not deleting_original
+            else "",
             current_dir,
         )
     )
@@ -120,16 +122,21 @@ def main() -> None:
         for file in filter(
             lambda f: f.is_file(), current_dir.glob(f"*{input_extension}")
         ):
-            # Emit a message for each file found.
-            status.update(f'Found "{file.name}"\n')
-
             # This will be ffmpeg's output.
             # It might be deleted as leftover when KeyboardInterrupt raised.
-            #output: Path = current_dir.joinpath(file.stem).with_suffix(output_extension)
             output: Path = file.with_suffix(output_extension)
 
+            # If the output file already exists, skip this file.
+            if output.exists():
+                status.update(f'[yellow]"{output.name}" already exists. Skipping.')
+                continue
+
+            # Emit a message for each file found.
+            status.update(f'Found "{file.name}", converting...')
+
             try:
-                command: str = f'ffmpeg -i "{file.name}" "{output.name}"'
+                # -n is for exiting if output already exists, rather than asking for overwrite.
+                command: str = f'ffmpeg -n -i "{file.name}" "{output.name}"'
 
                 subprocess.run(
                     command,
@@ -137,29 +144,25 @@ def main() -> None:
                     check=True,
                 )
 
-                # if current_dir.joinpath(output).exists() and not keeping_original:
-                if output.exists() and not keeping_original:
+                # Keep this outside of the if block to log whether the we are keeping the original files or not.
+                console.log("[magenta]Done! Looking for the next candidate file.")
+                # if output.exists() and deleting_original:
+                if deleting_original:
                     # Delete the original file if the output file is created and the option is present.
                     Path.unlink(file)
-                    console.log(
-                        "[magenta]Done! Moving to the next candidate file.",
-                        highlight=True,
-                    )
                     console.log(
                         f'[magenta]The original file "{file.name}" is deleted.',
                         highlight=True,
                     )
-            except subprocess.CalledProcessError as e:
-                err_console.log(f'Error converting "{file.name}": {e.stderr}')
+            except subprocess.CalledProcessError as exc:
+                console.log(f'[bold red]Error converting "{file.name}"[/bold red]')
+                rprint(exc.stderr, file=open("error.log", "a"))
                 console.log("[yellow]Keeping the original file.")
             except FileNotFoundError:
-                err_console.log(
-                    """The original file hasn't been found.
-                    Moving to the next candidate file."""
-                )
+                console.log("[bold red]The original file hasn't been found.[/bold red]")
             except KeyboardInterrupt:
                 status.stop()
-                print("[red]Keyboard interrupt detected")
+                rprint("[red]Keyboard interrupt detected")
                 # Ask the user if they want to keep the unfinished files.
                 # By default, leftovers will be deleted.
                 if not Confirm.ask(
@@ -169,7 +172,7 @@ def main() -> None:
                     show_default=True,
                     default=False,
                 ):
-                    print("[yellow]Deleting leftovers.")
+                    rprint("[yellow]Deleting leftovers.")
                     for leftover in filter(
                         lambda f: f.is_file(), current_dir.glob(f"*{output_extension}")
                     ):
@@ -177,10 +180,10 @@ def main() -> None:
                         if leftover == output:
                             Path.unlink(leftover)
                             status.update(f'[yellow]{output.name}" deleted.')
-                print("Exiting.")
+                rprint("Exiting.")
                 sleep(4)
                 exit()
-    print("[dodger_blue1]Everything is finished. Closing.")
+    rprint("[dodger_blue1]Everything is finished. Closing.")
     sleep(3.5)
 
 
