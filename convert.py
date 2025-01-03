@@ -1,6 +1,8 @@
 #!python
 """
 Place this file in the directory where you want it to work, then execute.
+
+This script mass converts audio files via FFmpeg.
 """
 
 import argparse
@@ -37,7 +39,6 @@ parser.add_argument(
     "input",  # this argument denotes a positional argument since it doesn't have - or --.
     type=str,
     help="The extension of the files to be converted.",
-    default="webm",
     action="store",  # store means that the value will be stored in the variable.
     nargs="?",  # number of arguments, "?" means zero or one value.
 )
@@ -56,7 +57,6 @@ parser.add_argument(
     type=str,
     help="The target extension.",
     action="store",
-    default="mp3",
     nargs="?",
 )
 
@@ -75,7 +75,6 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
     Raises:
         ValueError: If either extension is invalid.
     """
-    pattern: str = r"^\.[a-zA-Z0-9]+$"
 
     def clean_ext(ext: str) -> str:
         ext = ext.strip().lstrip(".")
@@ -94,10 +93,7 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
 def main() -> None:
     args = parser.parse_args()  # Parse the arguments.
 
-    # Don't forget the dots.
-    input_extension, output_extension = check_extensions(
-        "." + args.input, "." + args.output
-    )
+    input_extension, output_extension = check_extensions(args.input, args.output)
 
     # Intialize the console.
     console = Console()
@@ -107,6 +103,9 @@ def main() -> None:
 
     # Get the current directory where this script is located.
     current_dir: Path = Path(__file__).parent.resolve()
+
+    # -n is for exiting if output already exists, rather than asking for overwrite.
+    command: str = 'ffmpeg -n -i "{input}" "{output}"'
 
     rprint(
         "{} -> {} {}\nCurrent directory is: {}\n".format(
@@ -137,11 +136,8 @@ def main() -> None:
             status.update(f'Found "{file.name}", converting...')
 
             try:
-                # -n is for exiting if output already exists, rather than asking for overwrite.
-                command: str = f'ffmpeg -n -i "{file.name}" "{output.name}"'
-
                 subprocess.run(
-                    command,
+                    command.format(input=file.name, output=output.name),
                     capture_output=True,
                     check=True,
                 )
