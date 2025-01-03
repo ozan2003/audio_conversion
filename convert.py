@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/python3
 """
 Place this file in the directory where you want it to work, then execute.
 
