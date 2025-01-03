@@ -61,32 +61,34 @@ parser.add_argument(
 )
 
 
-def check_extensions(*extensions: str) -> tuple[str, ...]:
+def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
     """
-    Checks the validity of the extensions given.
-
-    The extensions should be started with a dot,
-    can be of any length, and can contain only
-    alphanumeric characters.
+    Validates input and output file extensions.
 
     Args:
-       *extensions: str: The extensions to be checked.
+        input_ext: The source file extension
+        output_ext: The target file extension
 
     Returns:
-       A tuple comprised of extensions.
+        A tuple of (input, output) extensions, each starting with a dot.
 
     Raises:
-       RuntimeError: If any of the extensions are invalid.
+        ValueError: If either extension is invalid.
     """
     pattern: str = r"^\.[a-zA-Z0-9]+$"
 
-    for extension in extensions:
-        if not re.match(pattern, extension):
-            raise RuntimeError(
-                f"Invalid extension for {extension!r}. Please check your input."
+    def clean_ext(ext: str) -> str:
+        ext = ext.strip().lstrip(".")
+
+        if not ext or not re.match(r"^[a-zA-Z0-9]+[a-zA-Z0-9-]*$", ext):
+            raise ValueError(
+                f"Invalid extension: '{ext}'. Extensions must contain only "
+                "letters, numbers, and hyphens, and cannot be empty."
             )
 
-    return extensions
+        return f".{ext.lower()}"
+
+    return clean_ext(input_ext), clean_ext(output_ext)
 
 
 def main() -> None:
