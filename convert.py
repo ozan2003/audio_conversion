@@ -77,7 +77,7 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
     """
 
     def clean_ext(ext: str) -> str:
-        ext = ext.strip().lstrip(".")
+        ext = ext.strip().lstrip(".") # Get the extension w/o its dot. (e.g. "mp3" from ".mp3")
 
         if not ext or not re.match(r"^[a-zA-Z0-9]+[a-zA-Z0-9-]*$", ext):
             raise ValueError(
