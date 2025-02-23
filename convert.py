@@ -115,19 +115,22 @@ def check_extensions(extension: str) -> str:
 def main() -> None:
     args = parser.parse_args()  # Parse the arguments.
 
-    # Sanitize the input and output extensions.
-    input_extension, output_extension = check_extensions(args.input, args.output)
-
-    # Delete the original files if the option is present.
-    deleting_original: bool = args.delete
-
     # Get the current directory where this script is located.
     current_dir: Path = Path(__file__).parent.resolve()
 
+    # Sanitize the input and output extensions.
+    input_extension: str = check_extensions(args.input)
+
     # Optionally print the files that will be converted.
     if args.print:
+        # We are not converting anything, so we don't need to check the output extension.
         print_files(input_extension, current_dir)
         exit()
+
+    output_extension: str = check_extensions(args.output)
+
+    # Delete the original files if the option is present.
+    deleting_original: bool = args.delete
 
     # Intialize the console.
     console = Console()
