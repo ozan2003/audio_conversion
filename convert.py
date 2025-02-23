@@ -115,10 +115,8 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
 def main() -> None:
     args = parser.parse_args()  # Parse the arguments.
 
+    # Sanitize the input and output extensions.
     input_extension, output_extension = check_extensions(args.input, args.output)
-
-    # Intialize the console.
-    console = Console()
 
     # Delete the original files if the option is present.
     deleting_original: bool = args.delete
@@ -130,6 +128,9 @@ def main() -> None:
     if args.print:
         print_files(input_extension, current_dir)
         exit()
+
+    # Intialize the console.
+    console = Console()
 
     # -n is for exiting if output already exists, rather than asking for overwrite.
     command: str = 'ffmpeg -n -i "{input}" "{output}"'
