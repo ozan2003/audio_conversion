@@ -66,7 +66,6 @@ parser.add_argument(
     "--print",
     help="Print the files that will be converted.",
     action="store_true",
-    nargs="?",
 )
 
 
