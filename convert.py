@@ -82,7 +82,7 @@ def print_files(input_ext: str, location: Path) -> None:
         print(file.name)
 
 
-def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
+def check_extensions(extension: str) -> str:
     """
     Validates input and output file extensions.
 
@@ -98,9 +98,8 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
     """
 
     def clean_ext(ext: str) -> str:
-        ext = ext.strip().lstrip(
-            "."
-        )  # Get the extension w/o its dot. (e.g. "mp3" from ".mp3")
+        # Get the extension w/o its dot. (e.g. "mp3" from ".mp3")
+        ext = ext.strip().lstrip(".")
 
         if not ext or not re.match(r"^[a-zA-Z0-9]+[a-zA-Z0-9-]*$", ext):
             raise ValueError(
@@ -110,7 +109,7 @@ def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
 
         return f".{ext.lower()}"
 
-    return clean_ext(input_ext), clean_ext(output_ext)
+    return clean_ext(extension)
 
 
 def main() -> None:
