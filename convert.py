@@ -60,6 +60,28 @@ parser.add_argument(
     nargs="?",
 )
 
+# Option for printing the files that will be converted.
+parser.add_argument(
+    "-p",
+    "--print",
+    help="Print the files that will be converted.",
+    action="store_true",
+    nargs="?",
+)
+
+
+def print_files(input_ext: str, location: Path) -> None:
+    """
+    Prints the files that will be converted.
+
+    Args:
+        input_ext: The source file extension.
+        location: The directory where the files are located.
+    """
+
+    for file in filter(lambda f: f.is_file(), location.glob(f"*{input_ext}")):
+        print(file.name)
+
 
 def check_extensions(input_ext: str, output_ext: str) -> tuple[str, str]:
     """
@@ -103,6 +125,11 @@ def main() -> None:
 
     # Get the current directory where this script is located.
     current_dir: Path = Path(__file__).parent.resolve()
+
+    # Optionally print the files that will be converted.
+    if args.print:
+        print_files(input_extension, current_dir)
+        exit()
 
     # -n is for exiting if output already exists, rather than asking for overwrite.
     command: str = 'ffmpeg -n -i "{input}" "{output}"'

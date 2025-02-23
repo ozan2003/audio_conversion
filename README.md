@@ -17,6 +17,12 @@ convert.py avi mp4 # converts all .avi files to .mp4.
 convert.py -d mp3 webm # convert all mp3 files to webm, deleting the original files.
 ```
 
+### Printing files beforehand
+
+```shell
+convert.py --print mp3 # prints all .mp3 files that will be converted.
+```
+
 ## Dependencies
 
 - Python 3.7 and above
