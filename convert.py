@@ -169,6 +169,7 @@ def main() -> None:
             try:
                 subprocess.run(
                     command.format(input=file.name, output=output.name),
+                    shell=True,
                     capture_output=True,
                     check=True,
                 )
