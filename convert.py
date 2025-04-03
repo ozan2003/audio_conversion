@@ -42,7 +42,7 @@ def main() -> None:
     current_dir: Path = Path(__file__).parent.resolve()
 
     # Sanitize the input and output extensions.
-    input_extension: str = check_extensions(args.input)
+    input_extension: str = check_extension(args.input)
 
     # Optionally print the files that will be converted.
     if args.print:
@@ -51,7 +51,7 @@ def main() -> None:
         sys_exit()
 
     # We can check the output extension here.
-    output_extension: str = check_extensions(args.output)
+    output_extension: str = check_extension(args.output)
 
     # Delete the original files if the option is present.
     deleting_original: bool = args.delete
@@ -190,7 +190,7 @@ def print_files(input_ext: str, location: Path) -> None:
         print(file.name)  # noqa: T201
 
 
-def check_extensions(extension: str) -> str:
+def check_extension(extension: str) -> str:
     """
     Check if the extension is valid.
 
