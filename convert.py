@@ -156,25 +156,25 @@ def main() -> None:
 
     with console.status("Converting files...", spinner="dots") as status:
         # Iterating through files one by one where this file is located.
-        for file in filter(
+        for input_file in filter(
             lambda f: f.is_file(),
             current_dir.glob(f"*{input_extension}"),
         ):
             # This will be ffmpeg's output.
             # It might be deleted as leftover when KeyboardInterrupt raised.
-            output: Path = file.with_suffix(output_extension)
+            output_file: Path = input_file.with_suffix(output_extension)
 
             # If the output file already exists, skip this file.
-            if output.exists():
-                status.update(f'[yellow]"{output.name}" already exists. Skipping.')
+            if output_file.exists():
+                status.update(f'[yellow]"{output_file.name}" already exists. Skipping.')
                 continue
 
             # Emit a message for each file found.
-            status.update(f'Found "{file.name}", converting...')
+            status.update(f'Found "{input_file.name}", converting...')
 
             try:
-                subprocess.run(
-                    command.format(input=file.name, output=output.name),
+                subprocess.run(  # noqa: S602
+                    command.format(input=input_file.name, output=output_file.name),
                     shell=True,
                     capture_output=True,
                     check=True,
@@ -185,13 +185,15 @@ def main() -> None:
                 # if output.exists() and deleting_original:
                 if deleting_original:
                     # Delete the original file if the output file is created and the option is present.
-                    Path.unlink(file)
+                    Path.unlink(input_file)
                     console.log(
-                        f'[magenta]The original file "{file.name}" is deleted.',
+                        f'[magenta]The original file "{input_file.name}" is deleted.',
                         highlight=True,
                     )
             except subprocess.CalledProcessError as exc:
-                console.log(f'[bold red]Error converting "{file.name}"[/bold red]')
+                console.log(
+                    f'[bold red]Error converting "{input_file.name}"[/bold red]'
+                )
                 with Path("error.log").open("a", encoding="utf-8") as error_file:
                     rprint(exc.stderr, file=error_file)
                 console.log("[yellow]Keeping the original file.")
@@ -215,9 +217,9 @@ def main() -> None:
                         current_dir.glob(f"*{output_extension}"),
                     ):
                         # We are looking for exact output so that the other files aren't affected.
-                        if leftover == output:
+                        if leftover == output_file:
                             Path.unlink(leftover)
-                            status.update(f'[yellow]{output.name}" deleted.')
+                            status.update(f'[yellow]{output_file.name}" deleted.')
                 rprint("Exiting.")
                 sleep(4)
                 sys_exit()
