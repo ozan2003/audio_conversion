@@ -6,26 +6,27 @@ This script mass converts audio files via FFmpeg.
 """
 
 import argparse
-from sys import exit
-from time import sleep
-import subprocess
 import re
+import subprocess
 from pathlib import Path
 from shutil import which
+from sys import exit as sys_exit
+from time import sleep
 
 # Check if rich is installed.
 try:
     from rich import print as rprint
-    from rich.prompt import Confirm
     from rich.console import Console
+    from rich.prompt import Confirm
 except ModuleNotFoundError as exc:
     exc.add_note("rich is not installed. Please install it via 'pip install rich'.")
     raise
 
 # Check if FFmpeg is available
 if not which("ffmpeg"):
+    msg = "FFmpeg is not found. Please install it and add it to path."
     raise FileNotFoundError(
-        "FFmpeg is not found. Please install it and add it to path."
+        msg,
     )
 
 # argparse allows us to communicate the program via terminal.
@@ -76,25 +77,25 @@ def print_files(input_ext: str, location: Path) -> None:
     Args:
         input_ext: The source file extension.
         location: The directory where the files are located.
-    """
 
+    """
     for file in filter(lambda f: f.is_file(), location.glob(f"*{input_ext}")):
-        print(file.name)
+        print(file.name)  # noqa: T201
 
 
 def check_extensions(extension: str) -> str:
     """
-    Validates input and output file extensions.
+    Check if the extension is valid.
 
     Args:
-        input_ext: The source file extension
-        output_ext: The target file extension
+        extension: The extension to be checked.
 
     Returns:
-        A tuple of (input, output) extensions, each starting with a dot.
+        str: The sanitized extension.
 
     Raises:
         ValueError: If either extension is invalid.
+
     """
 
     def clean_ext(ext: str) -> str:
@@ -102,9 +103,12 @@ def check_extensions(extension: str) -> str:
         ext = ext.strip().lstrip(".")
 
         if not ext or not re.match(r"^[a-zA-Z0-9]+[a-zA-Z0-9-]*$", ext):
-            raise ValueError(
+            msg = (
                 f"Invalid extension: '{ext}'. Extensions must contain only "
                 "letters, numbers, and hyphens, and cannot be empty."
+            )
+            raise ValueError(
+                msg,
             )
 
         return f".{ext.lower()}"
@@ -125,8 +129,9 @@ def main() -> None:
     if args.print:
         # We are not converting anything, so we don't need to check the output extension.
         print_files(input_extension, current_dir)
-        exit()
+        sys_exit()
 
+    # We can check the output extension here.
     output_extension: str = check_extensions(args.output)
 
     # Delete the original files if the option is present.
@@ -146,13 +151,14 @@ def main() -> None:
             if not deleting_original
             else "",
             current_dir,
-        )
+        ),
     )
 
     with console.status("Converting files...", spinner="dots") as status:
         # Iterating through files one by one where this file is located.
         for file in filter(
-            lambda f: f.is_file(), current_dir.glob(f"*{input_extension}")
+            lambda f: f.is_file(),
+            current_dir.glob(f"*{input_extension}"),
         ):
             # This will be ffmpeg's output.
             # It might be deleted as leftover when KeyboardInterrupt raised.
@@ -186,7 +192,8 @@ def main() -> None:
                     )
             except subprocess.CalledProcessError as exc:
                 console.log(f'[bold red]Error converting "{file.name}"[/bold red]')
-                rprint(exc.stderr, file=open("error.log", "a"))
+                with Path("error.log").open("a", encoding="utf-8") as error_file:
+                    rprint(exc.stderr, file=error_file)
                 console.log("[yellow]Keeping the original file.")
             except FileNotFoundError:
                 console.log("[bold red]The original file hasn't been found.[/bold red]")
@@ -204,7 +211,8 @@ def main() -> None:
                 ):
                     rprint("[yellow]Deleting leftovers.")
                     for leftover in filter(
-                        lambda f: f.is_file(), current_dir.glob(f"*{output_extension}")
+                        lambda f: f.is_file(),
+                        current_dir.glob(f"*{output_extension}"),
                     ):
                         # We are looking for exact output so that the other files aren't affected.
                         if leftover == output:
@@ -212,7 +220,7 @@ def main() -> None:
                             status.update(f'[yellow]{output.name}" deleted.')
                 rprint("Exiting.")
                 sleep(4)
-                exit()
+                sys_exit()
     rprint("[dodger_blue1]Everything is finished. Closing.")
     sleep(3.5)
 
