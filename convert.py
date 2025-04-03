@@ -170,7 +170,7 @@ def setup_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-p",
         "--print",
-        help="Print the files that will be converted.",
+        help="Print the files to be converted.",
         action="store_true",
     )
 
