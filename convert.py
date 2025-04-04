@@ -20,7 +20,9 @@ try:
     from rich.prompt import Confirm
     from rich.status import Status
 except ModuleNotFoundError as exc:
-    exc.add_note("rich is not installed. Please install it via 'pip install rich'.")
+    exc.add_note(
+        "rich is not installed. Please install it via 'pip install rich'."
+    )
     raise
 
 # Check if FFmpeg is available
@@ -46,7 +48,8 @@ def main() -> None:
 
     # Optionally print the files that will be converted.
     if args.print:
-        # We are not converting anything, so we don't need to check the output extension.
+        # We are not converting anything,
+        # so we don't need to check the output extension.
         print_files(input_extension, current_dir)
         sys_exit()
 
@@ -82,7 +85,9 @@ def main() -> None:
 
             # If the output file already exists, skip this file.
             if output_file.exists():
-                status.update(f'[yellow]"{output_file.name}" already exists. Skipping.')
+                status.update(
+                    f'[yellow]"{output_file.name}" already exists. Skipping.'
+                )
                 continue
 
             # Emit a message for each file found.
@@ -98,11 +103,15 @@ def main() -> None:
                     check=True,
                 )
 
-                # Keep this outside of the if block to log whether the we are keeping the original files or not.
-                console.log("[magenta]Done! Looking for the next candidate file.")
+                # Keep this outside of the if block to log whether
+                # we are keeping the original files or not.
+                console.log(
+                    "[magenta]Done! Looking for the next candidate file."
+                )
                 # if output.exists() and deleting_original:
                 if deleting_original:
-                    # Delete the original file if the output file is created and the option is present.
+                    # Delete the original file if the output file
+                    # is created and the option is present.
                     Path.unlink(input_file)
                     console.log(
                         f'[magenta]The original file "{input_file.name}" is deleted.',
@@ -112,14 +121,21 @@ def main() -> None:
                 console.log(
                     f'[bold red]Error converting "{input_file.name}"[/bold red]'
                 )
-                with Path("error.log").open("a", encoding="utf-8") as error_file:
+                with Path("error.log").open(
+                    "a", encoding="utf-8"
+                ) as error_file:
                     rprint(exc.stderr, file=error_file)
                 console.log("[yellow]Keeping the original file.")
             except FileNotFoundError:
-                console.log("[bold red]The original file hasn't been found.[/bold red]")
+                console.log(
+                    "[bold red]The original file hasn't been found.[/bold red]"
+                )
             except KeyboardInterrupt:
                 handle_keyboard_interrupt(
-                    current_dir, status, output_extension, output_file
+                    status,
+                    current_dir,
+                    output_file,
+                    output_extension,
                 )
     rprint("[dodger_blue1]Everything is finished. Closing.")
     sleep(3.5)
@@ -224,16 +240,19 @@ def check_extension(extension: str) -> str:
 
 
 def handle_keyboard_interrupt(
-    current_dir: Path, status: Status, output_extension: str, output_file: Path
+    status: Status,
+    current_dir: Path,
+    output_file: Path,
+    output_extension: str,
 ) -> None:
     """
     Handle KeyboardInterrupt gracefully.
 
     Args:
-        current_dir: The directory where the files are located.
         status: The status object to update.
-        output_extension: The output file extension.
+        current_dir: The directory where the files are located.
         output_file: The output file to delete if needed.
+        output_extension: The output file extension.
 
     """
     status.stop()
