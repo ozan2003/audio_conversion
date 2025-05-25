@@ -63,7 +63,7 @@ def main() -> None:
     # Use the commnd strings with format() for safety.
     # Specific optimizations for some formats.
     if input_extension == ".webm" and output_extension == ".mp3":
-        ffmpeg_command = 'ffmpeg -i "{input}" -vn -codec:a libmp3lame -b:a 320k -ar 48000 "{output}"'
+        ffmpeg_command = 'ffmpeg -i "{input}" -vn -codec:a libmp3lame -b:a 128k -ar 48000 "{output}"'
     else:
         # -n is for exiting if output already exists, rather than asking for overwrite.
         ffmpeg_command = 'ffmpeg -n -i "{input}" "{output}"'
