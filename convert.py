@@ -32,9 +32,6 @@ if not which("ffmpeg"):
         msg,
     )
 
-# -n is for exiting if output already exists, rather than asking for overwrite.
-ffmpeg_command: str = 'ffmpeg -n -i "{input}" "{output}"'
-
 
 def main() -> None:
     parser = setup_argparser()
@@ -44,7 +41,7 @@ def main() -> None:
     current_dir: Path = Path(__file__).parent.resolve()
 
     # Sanitize the input and output extensions.
-    input_extension: str = check_extension(args.input)
+    input_extension = check_extension(args.input)
 
     # Optionally print the files that will be converted.
     if args.print:
@@ -54,7 +51,22 @@ def main() -> None:
         sys_exit()
 
     # We can check the output extension here.
-    output_extension: str = check_extension(args.output)
+    output_extension = check_extension(args.output)
+
+    if input_extension == output_extension:
+        msg = (
+            "Input and output extensions are the same. "
+            "Please provide different extensions."
+        )
+        raise ValueError(msg)
+
+    # Use the commnd strings with format() for safety.
+    # Specific optimizations for some formats.
+    if input_extension == ".webm" and output_extension == ".mp3":
+        ffmpeg_command = 'ffmpeg -i "{input}" -vn -codec:a libmp3lame -b:a 320k -ar 48000 "{output}"'
+    else:
+        # -n is for exiting if output already exists, rather than asking for overwrite.
+        ffmpeg_command = 'ffmpeg -n -i "{input}" "{output}"'
 
     # Delete the original files if the option is present.
     deleting_original: bool = args.delete
